@@ -28,6 +28,7 @@ void initializeDr4bDebug() {
 void initialize() {
   leftDrivetrain.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
   rightDrivetrain.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
+  claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
   dr4bMech.tare_position_all(); // Dr4b MUST be lowered completely before starting
   auto& logger = mvlib::Logger::getInstance();
   mvlib::setOdom(&chassis);
@@ -55,22 +56,31 @@ void initialize() {
   // logger.watch("Turn", LogLevel::INFO, WatchMode::onInterval, 50_mvMs, 
   // [&]() { return controller.get_analog(ANALOG_RIGHT_X); } );
 
-  // logger.watch("Battery %", LogLevel::INFO, WatchMode::onInterval, 2_mvS, 
-  // [&]() { return pros::c::battery_get_capacity(); }, "%.1f");
+  logger.watch("Claw Motor Temp", LogLevel::INFO, WatchMode::onInterval, 500_mvMs, 
+    [&]() { return claw.get_temperature(); },
+    mvlib::LevelOverride<double>{
+      .elevatedLevel = LogLevel::WARN,
+      .predicate = PREDICATE(v > 45),
+      .label = "Claw Motor Overheating"
+    });
+  logger.watch("Claw Motor Watts", LogLevel::INFO, WatchMode::onInterval, 150_mvMs, 
+    [&]() { return claw.get_power(); });
 
-  // logger.addWaypoint("Test 1", {
-  //   .tarX = 0,
-  //   .tarY = 5,
-  //   .timeoutMs = 5000,
-  //   .linearTol = 2,
-  //   .retriggerable = true
-  // });
+    logger.watch("Claw Motor Position", LogLevel::INFO, WatchMode::onChange, 150_mvMs, 
+    [&]() { return claw.get_position(); });
 
-  // logger.watch("Robot in/s", LogLevel::INFO, WatchMode::onInterval, 75_mvMs, 
-  // [&]() { 
-  //   const double avgVelocity = (leftDrivetrain.get_actual_velocity() + rightDrivetrain.get_actual_velocity()) / 2;
-  //   return (3.25 * M_PI / 60.0) * (36.0/60.0 * avgVelocity);
-  // });
+
+  logger.watch("Claw State", LogLevel::INFO, WatchMode::onChange, 250_mvMs, 
+    [&]() { 
+      // Convert the ClawState enum to a string
+      switch (getClawState()) {
+        case ClawState::CLOSED: return "Closed";
+        case ClawState::OPEN: return "Open";
+        case ClawState::OPEN_FAILED: return "Open Failed";
+        case ClawState::RELAXED: return "Relaxed";
+        default: return "Unknown";
+      }
+    }); 
 
   // logger.watch("Angular PID", LogLevel::INFO, WatchMode::onInterval, 1000_mvMs, 
   // [&]() { return chassis.angularPID.getOutput(); });
@@ -167,6 +177,7 @@ void opcontrol() {
   // chassis.turnToHeading(0, 15000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE}, false);
   while (true) {
     dr4bHandle();
+    controllerClawHandle();
     control::updateDrive(config);
 
     // print pose to screen

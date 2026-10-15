@@ -1,13 +1,13 @@
 #include "mvlib/core.hpp"
-#include "mvlib/private/telemetry.hpp"
+#include "mvlib/private/terminalOut.hpp"
 #include "mvlib/private/raii.hpp"
+#include "mvlib/private/sdCsv.hpp"
 #include <cerrno>
 #include <cmath>
 #include <cstdlib>
 
 namespace mvlib {
 void Logger::printWatches() {
-  if (m_watches.empty()) return;
   size_t index = 0;
 
   while (true) {
@@ -20,6 +20,7 @@ void Logger::printWatches() {
       // Lock mutex only while copying variables
       detail::uniqueLock lock(m_mutex);
       if (!lock.isLocked()) return;
+      if (m_watches.empty()) return;
       if (index >= m_watches.size()) break;
 
       auto& watch = m_watches[index++];
@@ -75,7 +76,7 @@ void Logger::printWatches() {
       }
     }
 
-    if (m_config.logToTerminal.load()) {
+    if (ensureTerminalSession()) {
       bool sentAsBinary = false;
 
       // Prefer the compact binary watch packet when the rendered value is a pure float.
@@ -103,7 +104,8 @@ void Logger::printWatches() {
       if (valueStr == "t") valueStr = "true";
 
       logToSD(lvl, "[WATCH],%u,%s,%u,%s,%s", nowMs,
-              levelToString(lvl), watchId, label.c_str(), valueStr.c_str());
+              levelToString(lvl), watchId, detail::escapeSdCsvField(label).c_str(),
+              detail::escapeSdCsvField(valueStr).c_str());
     }
   }
 }

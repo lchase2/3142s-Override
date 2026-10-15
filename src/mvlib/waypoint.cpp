@@ -1,7 +1,8 @@
 #include "mvlib/core.hpp"
-#include "mvlib/private/telemetry.hpp"
+#include "mvlib/private/terminalOut.hpp"
 #include "mvlib/waypoint.hpp"
 #include "mvlib/private/raii.hpp"
+#include "mvlib/private/sdCsv.hpp"
 #include <limits>
 #include <cmath>
 #include <cstdio>
@@ -121,20 +122,8 @@ WaypointHandle Logger::internalRegisterWaypoint(std::string name, WaypointParams
 
   if (!m_waypoints.back().createdWithOutputEnabled) return WaypointHandle(id);
 
-  if (m_config.logToTerminal.load()) {
-    detail::Telemetry::getInstance().sendRoster(id, m_waypoints.back().name);
-
-    detail::WaypointCreatedPacket pkt;
-    pkt.timestamp = static_cast<uint16_t>(pros::millis());
-    pkt.id = id;
-    pkt.tarX = static_cast<float>(details.tarX);
-    pkt.tarY = static_cast<float>(details.tarY);
-    pkt.tarT = detail::packTelemetryTheta(details.tarT.value_or(0.0));
-    pkt.linTol = details.linearTol;
-    pkt.thetaTol = details.thetaTol.value_or(std::numeric_limits<float>::quiet_NaN());
-    pkt.timeout = details.timeoutMs.value_or(0);
-    pkt.retriggerable = details.retriggerable ? 1 : 0;
-    detail::Telemetry::getInstance().sendWaypointCreated(pkt);
+  if (ensureTerminalSession()) {
+    sendWaypointMetadataLocked(m_waypoints.back());
   }
 
   if (m_config.logToSD.load()) logWaypointCreatedToSD(m_waypoints.back());
@@ -143,8 +132,25 @@ WaypointHandle Logger::internalRegisterWaypoint(std::string name, WaypointParams
 
 void Logger::logWaypointCreatedToSD(const InternalWaypoint& waypoint) {
   logToSD(LogLevel::OVERRIDE, "[WPOINT],%u,CREATED,%u,%s,%s",
-          waypoint.startTimeMs, waypoint.id, waypoint.name.c_str(),
+          waypoint.startTimeMs, waypoint.id, detail::escapeSdCsvField(waypoint.name).c_str(),
           formatParams(waypoint.params).c_str());
+}
+
+void Logger::sendWaypointMetadataLocked(const InternalWaypoint& waypoint) {
+  detail::Telemetry::getInstance().sendRoster(waypoint.id, waypoint.name);
+
+  detail::WaypointCreatedPacket pkt;
+  pkt.timestamp = static_cast<uint16_t>(pros::millis());
+  pkt.id = waypoint.id;
+  pkt.tarX = static_cast<float>(waypoint.params.tarX);
+  pkt.tarY = static_cast<float>(waypoint.params.tarY);
+  pkt.tarT = detail::packTelemetryTheta(waypoint.params.tarT.value_or(0.0));
+  pkt.linTol = waypoint.params.linearTol;
+  pkt.thetaTol = waypoint.params.thetaTol.value_or(
+      std::numeric_limits<float>::quiet_NaN());
+  pkt.timeout = waypoint.params.timeoutMs.value_or(0);
+  pkt.retriggerable = waypoint.params.retriggerable ? 1 : 0;
+  detail::Telemetry::getInstance().sendWaypointCreated(pkt);
 }
 
 std::optional<std::string> Logger::m_getRosterNameUnlocked(uint16_t id, bool isElevated) const {
@@ -155,12 +161,13 @@ std::optional<std::string> Logger::m_getRosterNameUnlocked(uint16_t id, bool isE
 bool Logger::resyncWaypointRoster(WPId id) {
   detail::uniqueLock lock(m_mutex);
   if (!lock.isLocked()) return false;
-  if (m_waypoints.empty() || !m_config.logToTerminal.load()) return false;
+  if (m_waypoints.empty()) return false;
 
   InternalWaypoint* waypoint = m_findWaypointUnlocked(id);
   if (!waypoint || !waypoint->active) return false;
+  if (!ensureTerminalSession()) return false;
 
-  detail::Telemetry::getInstance().sendRoster(waypoint->id, waypoint->name);
+  sendWaypointMetadataLocked(*waypoint);
   m_lastRosterFlush.store(pros::millis());
   return true;
 }
@@ -168,12 +175,17 @@ bool Logger::resyncWaypointRoster(WPId id) {
 void Logger::resyncAllWaypointsRoster() {
   detail::uniqueLock lock(m_mutex);
   if (!lock.isLocked()) return;
-  if (m_waypoints.empty() || !m_config.logToTerminal.load()) return;
+  if (m_waypoints.empty()) return;
+  if (!ensureTerminalSession()) return;
 
+  sendActiveWaypointMetadataLocked();
+  m_lastRosterFlush.store(pros::millis());
+}
+
+void Logger::sendActiveWaypointMetadataLocked() {
   for (const auto& wp : m_waypoints) {
     if (!wp.active) continue;
-    detail::Telemetry::getInstance().sendRoster(wp.id, wp.name);
+    sendWaypointMetadataLocked(wp);
   }
-  m_lastRosterFlush.store(pros::millis());
 }
 } // namespace mvlib

@@ -1,13 +1,12 @@
 #include "mvlib/core.hpp"
-#include "mvlib/private/telemetry.hpp"
+#include "mvlib/private/terminalOut.hpp"
 #include "mvlib/private/raii.hpp"
+#include "mvlib/private/sdCsv.hpp"
 #include <cmath>
 
 namespace mvlib {
 
 void Logger::printWaypoints() {
-  if (m_waypoints.empty()) return;
-
   uint32_t nowMs = pros::millis();
   std::shared_ptr<std::function<std::optional<Pose>()>> poseGetter;
   std::shared_ptr<pros::Mutex> poseGetterMutex;
@@ -29,6 +28,7 @@ void Logger::printWaypoints() {
 
   detail::uniqueLock lock(m_mutex);
   if (!lock.isLocked()) return;
+  if (m_waypoints.empty()) return;
 
   for (auto& wp : m_waypoints) {
     if (!wp.active) continue;
@@ -93,14 +93,14 @@ void Logger::printWaypoints() {
     if (!m_config.printWaypoints.load()) continue;
 
     // Send binary through terminal
-    if (m_config.logToTerminal.load()) {
+    if (ensureTerminalSession()) {
       detail::Telemetry::getInstance().sendWaypointStatus(wp.id, subType);
     }
 
     // Log standard ANSI text to the SD card.
     if (m_config.logToSD.load()) {
       logToSD(LogLevel::OVERRIDE, "[WPOINT],%u,%s,%u,%s",
-              nowMs, statusStr ? statusStr : "", wp.id, wp.name.c_str());
+              nowMs, statusStr ? statusStr : "", wp.id, detail::escapeSdCsvField(wp.name).c_str());
     }
   }
 }

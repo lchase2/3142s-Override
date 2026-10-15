@@ -1,5 +1,5 @@
 #include "mvlib/core.hpp"
-#include "mvlib/private/telemetry.hpp"
+#include "mvlib/private/terminalOut.hpp"
 #include "mvlib/private/raii.hpp"
 #include <cerrno>
 #include <cmath>
@@ -52,6 +52,7 @@ void Logger::printTelemetry() {
 
   if (!useSpeedEstimation) {
     static auto norm = [&](const double& rpm, pros::MotorGears gearset) {
+      if (!std::isfinite(rpm)) return 0.0;
       double maxRpm = 100.0;
       if (gearset == pros::MotorGears::rpm_200) maxRpm = 200.0;
       else if (gearset == pros::MotorGears::rpm_600) maxRpm = 600.0;
@@ -72,7 +73,7 @@ void Logger::printTelemetry() {
   }
 
   // Send binary through terminal
-  if (m_config.logToTerminal.load()) {
+  if (ensureTerminalSession()) {
     detail::PosePacket pkt;
     pkt.timestamp = static_cast<uint16_t>(pros::millis());
     pkt.x = static_cast<float>(pose.value().x);

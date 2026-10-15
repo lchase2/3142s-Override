@@ -18,12 +18,16 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // {right, left}
 pros::MotorGroup dr4bMech({-4, -5});
 
-// pros::adi::Pneumatics claw(11);
-// pros::Motor clawPitch(12);
+pros::Motor claw(
+  -20,
+  pros::v5::MotorGears::green,
+  pros::v5::MotorUnits::degrees
+);
 
 pros::Rotation horizontalOdom(-17);
 pros::Rotation verticalOdom(12);
-pros::IMU imu(15);
+pros::IMU imu1(15);
+pros::IMU imu2(16);
 
 
 lemlib::TrackingWheel verticalTrackingWheel(
@@ -43,7 +47,7 @@ lemlib::OdomSensors sensors(
   nullptr,
   &horizontalTrackingWheel,
   nullptr,
-  &imu
+  &imu1
 );
 
 const double trackWidth = 10.75;
