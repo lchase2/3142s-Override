@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 
 namespace lemlib {
 class PID {
@@ -74,6 +75,6 @@ class PID {
 
         float integral = 0;
         float prevError = 0;
-        double latestOut = 0;
+        std::atomic<float> latestOut{0};
 };
 } // namespace lemlib

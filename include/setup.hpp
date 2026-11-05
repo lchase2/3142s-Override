@@ -8,7 +8,7 @@
 
 #define MVLIB_USE_SIMPLES
 #include "mvlib/api.hpp"
-#include "mvlib/Optional/customOdom.hpp"
+#include "mvlib/Optional/lemlib.hpp"
 
 extern pros::MotorGroup leftDrivetrain;
 extern pros::MotorGroup rightDrivetrain;
@@ -35,7 +35,6 @@ void controllerClawHandle();
 
 enum class ClawState {
   OPEN,
-  OPEN_FAILED,
   CLOSED,
   RELAXED
 };
