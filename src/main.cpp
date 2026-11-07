@@ -31,7 +31,8 @@ void initialize() {
   leftDrivetrain.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
   rightDrivetrain.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
   claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-  dr4bMech.tare_position_all(); // Dr4b MUST be lowered completely before starting
+  // dr4bMech.tare_position_all(); // Dr4b MUST be lowered completely before starting
+  initializeLiftHeight();
   auto& logger = mvlib::Logger::getInstance();
 
   logger.setRobot({
@@ -70,7 +71,7 @@ void initialize() {
   logger.watch("Claw Motor Watts", LogLevel::INFO, WatchMode::onInterval, 150_mvMs, 
     [&]() { return claw.get_power(); }).setActive(false);
 
-    logger.watch("Claw Motor Position", LogLevel::INFO, WatchMode::onChange, 150_mvMs, 
+  logger.watch("Claw Motor Position", LogLevel::INFO, WatchMode::onChange, 150_mvMs, 
     [&]() { return claw.get_position(); }).setActive(false);
 
 
@@ -83,18 +84,22 @@ void initialize() {
         case ClawState::RELAXED: return "Relaxed";
         default: return "Unknown";
       }
-    }).setActive(false); 
+    }); 
   logger.watch("DR4B height", LogLevel::INFO, WatchMode::onInterval, 100_mvMs,
-  [&]() { return (dr4bMech.get_position(0) + dr4bMech.get_position(1)) / 2; }).setActive(false);
+  [&]() { return (dr4bMech.get_position(0) + dr4bMech.get_position(1)) / 2; });
+  
+  logger.watch("Claw Distance Sensor", LogLevel::INFO, WatchMode::onInterval, 100_mvMs,
+  [&]() { return clawDistance.get_distance(); },
+  mvlib::LevelOverride<int32_t>{
+    .elevatedLevel = LogLevel::OFF,
+    .predicate = PREDICATE(v > 2000)
+  });
+
   // logger.watch("Angular PID", LogLevel::INFO, WatchMode::onInterval, 1000_mvMs, 
   // [&]() { return chassis.angularPID.getOutput(); });
   // logger.setPrintWatches(false);
 
   chassis.setPose(0, 0, 0);
-  logger.info("Strarts");
-  captureBoomerang("Backwards boomerang #1",
-    {0, 48, 230}, 4000,
-    {.forwards = true, .lead = 0.99, .maxSpeed = 127});
 }
 
 // | # | Movement | Physical starting pose `(x, y, θ)` | Destination | Lead | Direction |
@@ -176,13 +181,6 @@ control::Slew slew{
   20,
   5,
   7.5
-};
-
-control::Slew lowSlew{
-  20,
-  20,
-  20,
-  20
 };
 
 control::ExpoTurnConfig expoTurnConfig{
@@ -283,14 +281,13 @@ void opcontrol() {
   while (true) {
     dr4bHandle();
     controllerClawHandle();
-    float dr4bHeight = (dr4bMech.get_position(0) + dr4bMech.get_position(1)) / 2;
-
-    config.slew = dr4bHeight < 100 ? lowSlew : slew;
+    handleToggle();
     control::updateDrive(config);
 
     // print pose to screen
     lemlib::Pose pose = chassis.getPose();
-    pros::screen::print(pros::E_TEXT_SMALL, 10, 10, "X: %.2f | Y: %.2f | Theta: %.2f", pose.x, pose.y, pose.theta);
+    pros::screen::print(pros::E_TEXT_SMALL, 10, 10, "X: %.2f | Y: %.2f | Theta: %.2f" , pose.x, pose.y, pose.theta);
+    pros::screen::print(pros::E_TEXT_SMALL, 10, 10, "X: %.;ouhqwiduh2f | Y: %.kquwhd2f | Theta: asd.2f");
     pros::delay(10);
 
   }

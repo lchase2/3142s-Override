@@ -1,4 +1,4 @@
-#include <math.h>
+#include <cmath>
 #include "pros/imu.hpp"
 #include "pros/motors.h"
 #include "pros/rtos.h"
@@ -10,12 +10,13 @@
 #include "pros/rtos.hpp"
 
 lemlib::OdomSensors::OdomSensors(TrackingWheel* vertical1, TrackingWheel* vertical2, TrackingWheel* horizontal1,
-                                 TrackingWheel* horizontal2, pros::Imu* imu)
+                                 TrackingWheel* horizontal2, pros::Imu* imu, pros::Imu* imu2)
     : vertical1(vertical1),
       vertical2(vertical2),
       horizontal1(horizontal1),
       horizontal2(horizontal2),
-      imu(imu) {}
+      imu(imu),
+      imu2(imu2) {}
 
 lemlib::Drivetrain::Drivetrain(pros::MotorGroup* leftMotors, pros::MotorGroup* rightMotors, float trackWidth,
                                float wheelDiameter, float rpm, float horizontalDrift)
@@ -47,34 +48,45 @@ lemlib::Chassis::Chassis(Drivetrain drivetrain, ControllerSettings linearSetting
  * @param sensors reference to the sensors struct
  */
 void calibrateIMU(lemlib::OdomSensors& sensors) {
-    int attempt = 1;
-    bool calibrated = false;
-    // calibrate inertial, and if calibration fails, then repeat 5 times or until successful
-    while (attempt <= 5) {
-        sensors.imu->reset();
-        // wait until IMU is calibrated
-        do pros::delay(10);
-        while (sensors.imu->get_status() != pros::ImuStatus::error && sensors.imu->is_calibrating());
-        // exit if imu has been calibrated
-        if (!isnanf(sensors.imu->get_heading()) && !isinf(sensors.imu->get_heading())) {
-            calibrated = true;
-            break;
+    pros::Imu* imus[] = {sensors.imu, sensors.imu2};
+    bool calibrated[] = {imus[0] == nullptr, imus[1] == nullptr};
+    for (int attempt = 1; attempt <= 5; ++attempt) {
+        for (int i = 0; i < 2; ++i)
+            if (!calibrated[i]) imus[i]->reset();
+
+        // Poll both sensors each time. Bound the wait in case a sensor never finishes.
+        const auto start = pros::millis();
+        bool calibrating;
+        do {
+            pros::delay(10);
+            calibrating = false;
+            for (int i = 0; i < 2; ++i)
+                if (!calibrated[i] && imus[i]->get_status() != pros::ImuStatus::error &&
+                    imus[i]->is_calibrating()) calibrating = true;
+        } while (calibrating && pros::millis() - start < 3000);
+
+        for (int i = 0; i < 2; ++i) {
+            if (!calibrated[i] && imus[i]->get_status() != pros::ImuStatus::error &&
+                !imus[i]->is_calibrating() && std::isfinite(imus[i]->get_rotation())) calibrated[i] = true;
         }
-        // indicate error
+        if (calibrated[0] && calibrated[1]) return;
+
         pros::c::controller_rumble(pros::E_CONTROLLER_MASTER, "---");
-        lemlib::infoSink()->warn("IMU failed to calibrate! Attempt #{}", attempt);
-        attempt++;
+        lemlib::infoSink()->warn("IMU(s) failed to calibrate! Attempt #{}", attempt);
     }
-    // check if calibration attempts were successful
-    if (attempt > 5) {
-        sensors.imu = nullptr;
+
+    // Keep a working IMU even if the other one failed.
+    if (!calibrated[0]) sensors.imu = nullptr;
+    if (!calibrated[1]) sensors.imu2 = nullptr;
+    if (sensors.imu == nullptr && sensors.imu2 == nullptr)
         lemlib::infoSink()->error("IMU calibration failed, defaulting to tracking wheels / motor encoders");
-    }
+    else lemlib::infoSink()->warn("One IMU failed to calibrate, using the remaining IMU");
 }
 
 void lemlib::Chassis::calibrate(bool calibrateImu) {
     // calibrate the IMU if it exists and the user doesn't specify otherwise
-    if (sensors.imu != nullptr && calibrateImu) calibrateIMU(sensors);
+    if ((sensors.imu != nullptr || sensors.imu2 != nullptr) && calibrateImu) calibrateIMU(sensors);
+
     // initialize odom
     if (sensors.vertical1 == nullptr)
         sensors.vertical1 = new lemlib::TrackingWheel(drivetrain.leftMotors, drivetrain.wheelDiameter,

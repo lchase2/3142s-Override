@@ -68,7 +68,6 @@ void controllerClawHandle() {
       setClawAction(ClawState::CLOSED);
     }};
 
-
   } else if (controller.get_digital_new_press(DIGITAL_L1)) {
     setClawAction(currentState == ClawState::CLOSED ? ClawState::RELAXED : ClawState::CLOSED);
   }

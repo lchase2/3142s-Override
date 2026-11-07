@@ -26,6 +26,7 @@ class OdomSensors {
          * @param horizontal1 pointer to the first horizontal tracking wheel
          * @param horizontal2 pointer to the second horizontal tracking wheel
          * @param imu pointer to the IMU
+         * @param imu2 optional second IMU; its rotation changes are averaged with the first
          *
          * @b Example
          * @code {.cpp}
@@ -41,12 +42,13 @@ class OdomSensors {
          * @endcode
          */
         OdomSensors(TrackingWheel* vertical1, TrackingWheel* vertical2, TrackingWheel* horizontal1,
-                    TrackingWheel* horizontal2, pros::Imu* imu);
+                    TrackingWheel* horizontal2, pros::Imu* imu, pros::Imu* imu2 = nullptr);
         TrackingWheel* vertical1;
         TrackingWheel* vertical2;
         TrackingWheel* horizontal1;
         TrackingWheel* horizontal2;
         pros::Imu* imu;
+        pros::Imu* imu2;
 };
 
 /**

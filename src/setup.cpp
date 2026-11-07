@@ -16,7 +16,8 @@ pros::MotorGroup rightDrivetrain(
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // {right, left}
-pros::MotorGroup dr4bMech({-12, 1});
+pros::MotorGroup dr4bMech({-12, 1}, pros::MotorGears::invalid,
+                        pros::MotorUnits::degrees);
 
 pros::Motor claw(
   -15,
@@ -24,11 +25,18 @@ pros::Motor claw(
   pros::v5::MotorUnits::degrees
 );
 
+pros::Distance clawDistance(15); // CHANGE TO CORRECT PORT ONCE WIRED
+
+pros::Motor toggle(
+  4,
+  pros::v5::MotorGears::green, // 5.5w motor
+  pros::v5::MotorUnits::degrees
+);
+
 pros::Rotation horizontalOdom(-4);
 pros::Rotation verticalOdom(7);
 pros::IMU imu1(16);
-pros::IMU imu2(20);
-
+pros::IMU imu2(11);
 
 lemlib::TrackingWheel verticalTrackingWheel(
   &verticalOdom,
@@ -47,7 +55,8 @@ lemlib::OdomSensors sensors(
   nullptr,
   &horizontalTrackingWheel,
   nullptr,
-  &imu1
+  &imu1,
+  &imu2
 );
 
 const double trackWidth = 10.75;
@@ -91,4 +100,12 @@ lemlib::Chassis chassis(
   lateralPID,
   angularPID,
   sensors
+);
+
+lemlib::PID liftPID(
+  5,
+  0,
+  2,
+  0,
+  false
 );

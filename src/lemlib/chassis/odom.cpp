@@ -3,7 +3,7 @@
 // Here is a link to the original document
 // http://thepilons.ca/wp-content/uploads/2018/10/Tracking.pdf
 
-#include <math.h>
+#include <cmath>
 #include "pros/rtos.hpp"
 #include "lemlib/util.hpp"
 #include "lemlib/chassis/odom.hpp"
@@ -26,16 +26,44 @@ float prevVertical2 = 0;
 float prevHorizontal = 0;
 float prevHorizontal1 = 0;
 float prevHorizontal2 = 0;
-float prevImu = 0;
+namespace {
+float prevImu[2] = {0, 0};
+bool prevImuValid[2] = {true, true};
+
+// PROS reports rotation in degrees, without wrapping at 360 degrees.
+bool readImu(pros::Imu* imu, float& rotation) {
+    if (imu == nullptr || imu->get_status() == pros::ImuStatus::error || imu->is_calibrating()) return false;
+    rotation = imu->get_rotation();
+    return std::isfinite(rotation);
+}
+} // namespace
 
 void lemlib::setSensors(lemlib::OdomSensors sensors, lemlib::Drivetrain drivetrain) {
     odomSensors = sensors;
     drive = drivetrain;
+    for (int i = 0; i < 2; ++i) {
+        prevImu[i] = 0;
+        prevImuValid[i] = true;
+    }
 }
 
 lemlib::Pose lemlib::getPose(bool radians) {
     if (radians) return odomPose;
     else return lemlib::Pose(odomPose.x, odomPose.y, radToDeg(odomPose.theta));
+}
+
+float lemlib::getHeading(bool radians) {
+    float total = 0;
+    int count = 0;
+    for (auto* imu : {odomSensors.imu, odomSensors.imu2}) {
+        float rotation;
+        if (readImu(imu, rotation)) {
+            total += rotation;
+            ++count;
+        }
+    }
+    const float theta = count == 0 ? 0 : total / count;
+    return radians ? degToRad(theta) : theta;
 }
 
 void lemlib::setPose(lemlib::Pose pose, bool radians) {
@@ -79,26 +107,41 @@ void lemlib::update() {
     float vertical2Raw = 0;
     float horizontal1Raw = 0;
     float horizontal2Raw = 0;
-    float imuRaw = 0;
+
+    // Average changes rather than absolute angles so losing/recovering a sensor
+    // with a different zero does not introduce a jump in the robot's heading.
+    float deltaImu = 0;
+    int imuCount = 0;
+    pros::Imu* imus[] = {odomSensors.imu, odomSensors.imu2};
+    for (int i = 0; i < 2; ++i) {
+        float rotation;
+        const bool valid = readImu(imus[i], rotation);
+        if (valid) {
+            if (prevImuValid[i]) {
+                deltaImu += degToRad(rotation - prevImu[i]);
+                ++imuCount;
+            }
+            prevImu[i] = rotation;
+        }
+        prevImuValid[i] = valid;
+    }
+    if (imuCount != 0) deltaImu /= imuCount;
     if (odomSensors.vertical1 != nullptr) vertical1Raw = odomSensors.vertical1->getDistanceTraveled();
     if (odomSensors.vertical2 != nullptr) vertical2Raw = odomSensors.vertical2->getDistanceTraveled();
     if (odomSensors.horizontal1 != nullptr) horizontal1Raw = odomSensors.horizontal1->getDistanceTraveled();
     if (odomSensors.horizontal2 != nullptr) horizontal2Raw = odomSensors.horizontal2->getDistanceTraveled();
-    if (odomSensors.imu != nullptr) imuRaw = degToRad(odomSensors.imu->get_rotation());
 
     // calculate the change in sensor values
     float deltaVertical1 = vertical1Raw - prevVertical1;
     float deltaVertical2 = vertical2Raw - prevVertical2;
     float deltaHorizontal1 = horizontal1Raw - prevHorizontal1;
     float deltaHorizontal2 = horizontal2Raw - prevHorizontal2;
-    float deltaImu = imuRaw - prevImu;
 
     // update the previous sensor values
     prevVertical1 = vertical1Raw;
     prevVertical2 = vertical2Raw;
     prevHorizontal1 = horizontal1Raw;
     prevHorizontal2 = horizontal2Raw;
-    prevImu = imuRaw;
 
     // calculate the heading of the robot
     // Priority:
@@ -116,7 +159,7 @@ void lemlib::update() {
         heading -= (deltaVertical1 - deltaVertical2) /
                    (odomSensors.vertical1->getOffset() - odomSensors.vertical2->getOffset());
     // else, if the inertial sensor exists, use it
-    else if (odomSensors.imu != nullptr) heading += deltaImu;
+    else if (imuCount != 0) heading += deltaImu;
     // else, use the the substituted tracking wheels
     else
         heading -= (deltaVertical1 - deltaVertical2) /
@@ -184,7 +227,7 @@ void lemlib::update() {
 
 void lemlib::init() {
     if (trackingTask == nullptr) {
-        trackingTask = new pros::Task {[=] {
+        trackingTask = new pros::Task {[] {
             while (true) {
                 update();
                 pros::delay(10);

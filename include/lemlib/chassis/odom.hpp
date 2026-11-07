@@ -11,6 +11,15 @@ namespace lemlib {
  * @param drivetrain drivetrain to be used
  */
 void setSensors(lemlib::OdomSensors sensors, lemlib::Drivetrain drivetrain);
+
+/**
+ * @brief Get the average continuous IMU rotation (independent of setPose).
+ * Uses available, healthy IMUs; returns zero if neither can be read.
+ * Odometry averages rotation changes and falls back to tracking wheels when needed.
+ *
+ * @param radians true for radians, false for degrees. False by default
+ */
+float getHeading(bool radians = false);
 /**
  * @brief Get the pose of the robot
  *
