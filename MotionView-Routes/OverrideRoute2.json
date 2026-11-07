@@ -1,0 +1,400 @@
+{
+  "meta": {
+    "SchemaVersion": 5,
+    "CreationDate": "07/11/2026, 10:03:41",
+    "AppVersion": "1.4.0",
+    "Creator": "MotionView",
+    "PathName": "OverrideRoute2",
+    "Stats": {
+      "PoseCount": 6037,
+      "WatchCount": 11080,
+      "LogCount": 0,
+      "WaypointCount": 0,
+      "WaypointEvents": 0,
+      "PlannedWaypointCount": 3,
+      "PlannedObjectCount": 6,
+      "PlannedNodeCount": 4
+    },
+    "Times": {
+      "StartTime": "196.32s",
+      "EndTime": "679.2s",
+      "DurationTimeMs": 482880
+    },
+    "ViewingSettings": {
+      "Units": "in",
+      "SelectedField": "./assets/fields/v5/match_field_2026-2027_override.png",
+      "PathOffsets": {
+        "X": 0,
+        "Y": 0,
+        "Theta": 0
+      },
+      "RobotDimensions": {
+        "Width": 12,
+        "Height": 12
+      },
+      "SpeedNorm": {
+        "Minimum": 0,
+        "Maximum": 127
+      }
+    }
+  },
+  "planned-path": [
+    {
+      "x": -4.5,
+      "y": 63.5,
+      "theta": 85,
+      "speed": 127,
+      "forwards": true,
+      "motions": [
+        {
+          "id": "plan-motion-1794057837982-85dyck",
+          "type": "forward",
+          "overrideCode": "chassis.moveToPoint(@x, @y, 1000, {.forwards = @fwd, .maxSpeed = @spd, .minSpeed = @minspd}, false);"
+        }
+      ]
+    },
+    {
+      "x": 7.5,
+      "y": 64,
+      "theta": 80,
+      "speed": 127,
+      "forwards": true,
+      "lead": 0.43,
+      "motions": [
+        {
+          "id": "plan-motion-1794056393299-a18ab7",
+          "type": "rotate"
+        },
+        {
+          "id": "plan-motion-1794056406649-6h4rgx",
+          "type": "boomerang",
+          "overrideCode": "chassis.moveToPose(@x, @y, @th, 2000, {.forwards = @fwd, .lead = @ld, .maxSpeed = @spd, .minSpeed = @minspd}, false);"
+        }
+      ]
+    },
+    {
+      "x": 19,
+      "y": 48,
+      "theta": 110,
+      "speed": 127
+    }
+  ],
+  "planned-segment-export": true,
+  "planned-template-configuration": {
+    "library": "lemlib",
+    "templates": {
+      "custom": {
+        "forward": "chassis.moveToPoint(${x}, ${y}, 4000, {.forwards = ${forwards}, .maxSpeed = ${speed}});",
+        "rotate": "turnToHeading(${theta});",
+        "swing": "swingToHeading(${theta});",
+        "boomerang": "moveToPose(${x}, ${y}, ${theta}, 4000, {.forwards = ${forwards}, .lead = ${lead}, .maxSpeed = ${speed}});"
+      }
+    }
+  },
+  "planned-simulation-configuration": {
+    "library": "lemlib",
+    "previewModel": "lemlib",
+    "separatePIDsInitialized": false,
+    "lateralPID": {
+      "kP": 10,
+      "kI": 0,
+      "kD": 3,
+      "windupRange": 0,
+      "signFlipReset": true
+    },
+    "angularPID": {
+      "kP": 2,
+      "kI": 0,
+      "kD": 10,
+      "windupRange": 0,
+      "signFlipReset": true
+    },
+    "pointSteeringPID": {
+      "kP": 2,
+      "kI": 0,
+      "kD": 10,
+      "windupRange": 0,
+      "signFlipReset": true
+    },
+    "boomerangSteeringPID": {
+      "kP": 2,
+      "kI": 0,
+      "kD": 10,
+      "windupRange": 0,
+      "signFlipReset": true
+    },
+    "turnPID": {
+      "kP": 2,
+      "kI": 0,
+      "kD": 10,
+      "windupRange": 0,
+      "signFlipReset": true
+    },
+    "swingPID": {
+      "kP": 2,
+      "kI": 0,
+      "kD": 10,
+      "windupRange": 0,
+      "signFlipReset": true
+    },
+    "lateralSlew": 0,
+    "ezSlewDistance": 3,
+    "trackWidth": 12,
+    "motorWatts": 66,
+    "maxSpeedInchesPerSecond": 60,
+    "robotWeightPounds": 15,
+    "maxCarrotDistance": 0,
+    "lookAheadDistance": 7,
+    "turnBias": 1,
+    "horizontalDrift": 8,
+    "jarSetback": 0,
+    "jarHeadingMaxVoltage": 12,
+    "vexTurnConstant": 1,
+    "vexTurnThreshold": 1
+  },
+  "planned-objects": [
+    {
+      "id": "plan-object-1778817975552-5joe92",
+      "name": "Delay",
+      "color": "#9929bd",
+      "latestMethod": "",
+      "methods": [
+        {
+          "id": "plan-method-1778819078588-g4h01h",
+          "name": "5s",
+          "code": "pros::delay(5000);"
+        },
+        {
+          "id": "plan-method-1778817981719-zzq0ti",
+          "name": "1s",
+          "code": "pros::delay(1000);"
+        },
+        {
+          "id": "plan-method-1788920391693-2r13xy",
+          "name": "Custom Delay",
+          "code": "pros::delay();"
+        }
+      ]
+    },
+    {
+      "id": "plan-object-1791245742161-drqsnr",
+      "name": "DR4B",
+      "color": "#8b7ab8",
+      "latestMethod": "",
+      "methods": [
+        {
+          "id": "plan-method-1791245756462-ll3r2i",
+          "name": "Raise",
+          "code": "setDR4BHeight( );"
+        },
+        {
+          "id": "plan-method-1791245785161-6fz2vy",
+          "name": "Score Macro",
+          "code": "liftScoreMacro();"
+        }
+      ]
+    },
+    {
+      "id": "plan-object-1791245790494-b2divn",
+      "name": "Claw",
+      "color": "#739d87",
+      "latestMethod": "",
+      "methods": [
+        {
+          "id": "plan-method-1794056072151-48wep8",
+          "name": "Open",
+          "code": "setClawAction(ClawState::OPEN);"
+        },
+        {
+          "id": "plan-method-1794056078851-shz75m",
+          "name": "Close",
+          "code": "setClawAction(ClawState::CLOSED);"
+        },
+        {
+          "id": "plan-method-1794056090200-o9qbf9",
+          "name": "Relax",
+          "code": "setClawAction(ClawState::RELAXED);"
+        }
+      ]
+    },
+    {
+      "id": "plan-object-1791245835994-flx2ya",
+      "name": "Chassis",
+      "color": "#b38a6d",
+      "latestMethod": "",
+      "methods": [
+        {
+          "id": "plan-method-1791247627343-abcia1",
+          "name": "Set Pose",
+          "code": "chassis.setPose(@x, @y, @th);"
+        },
+        {
+          "id": "plan-method-1791305766298-9yyq6q",
+          "name": "Wait Until Done",
+          "code": "chassis.waitUntilDone();"
+        }
+      ]
+    },
+    {
+      "id": "plan-object-1791392437250-oc2q8i",
+      "name": "Logger",
+      "color": "#a06f87",
+      "latestMethod": "",
+      "methods": [
+        {
+          "id": "plan-method-1791392456650-3ug2sm",
+          "name": "Pause",
+          "code": "logger.pause();"
+        },
+        {
+          "id": "plan-method-1791392614451-wd8shc",
+          "name": "Log",
+          "code": "logger.info(\"\");"
+        },
+        {
+          "id": "plan-method-1791392635716-3d4s2g",
+          "name": "Create logger",
+          "code": "auto& logger = mvlib::Logger::getInstance();\n"
+        }
+      ]
+    },
+    {
+      "id": "plan-object-1794055967569-58sggs",
+      "name": "Toggle",
+      "color": "#6d8fb3",
+      "latestMethod": "",
+      "methods": [
+        {
+          "id": "plan-method-1794055987302-8manbx",
+          "name": "Spin",
+          "code": "setToggleState(ToggleState::SPINNING);"
+        },
+        {
+          "id": "plan-method-1794055997251-2jzfj2",
+          "name": "Off",
+          "code": "setToggleState(ToggleState::OFF);"
+        }
+      ]
+    }
+  ],
+  "planned-nodes": [
+    {
+      "id": "plan-node-1794058172043-61isqk",
+      "objectId": "plan-object-1791245835994-flx2ya",
+      "methodId": "plan-method-1791247627343-abcia1",
+      "beforeWaypoint": 0,
+      "index": 0
+    },
+    {
+      "id": "plan-node-1794056340898-8dqrmo",
+      "objectId": "plan-object-1794055967569-58sggs",
+      "methodId": "plan-method-1794055987302-8manbx",
+      "beforeWaypoint": 1,
+      "index": 0
+    },
+    {
+      "id": "plan-node-1794056344748-8zdjmo",
+      "objectId": "plan-object-1778817975552-5joe92",
+      "methodId": "plan-method-1778817981719-zzq0ti",
+      "beforeWaypoint": 1,
+      "index": 1
+    },
+    {
+      "id": "plan-node-1794056348582-79dyib",
+      "objectId": "plan-object-1794055967569-58sggs",
+      "methodId": "plan-method-1794055997251-2jzfj2",
+      "beforeWaypoint": 1,
+      "index": 2
+    }
+  ],
+  "planned-code-export": {
+    "header": "#include \"./../include/setup.hpp\"\nvoid MotionViewAuton() {",
+    "footer": "}",
+    "target": "project",
+    "path": "/Users/David/Documents/PROS-Projects/3142s-Override/src/autonomous.cpp"
+  },
+  "planned-active-path-id": "plan-path-1794055271455-gvupqj",
+  "planned-paths": [
+    {
+      "id": "plan-path-1794055271455-gvupqj",
+      "name": "OverrideRoute2",
+      "planned-path": [
+        {
+          "x": -4.5,
+          "y": 63.5,
+          "theta": 85,
+          "speed": 127,
+          "forwards": true,
+          "motions": [
+            {
+              "id": "plan-motion-1794057837982-85dyck",
+              "type": "forward",
+              "overrideCode": "chassis.moveToPoint(@x, @y, 1000, {.forwards = @fwd, .maxSpeed = @spd, .minSpeed = @minspd}, false);"
+            }
+          ]
+        },
+        {
+          "x": 7.5,
+          "y": 64,
+          "theta": 80,
+          "speed": 127,
+          "forwards": true,
+          "lead": 0.43,
+          "motions": [
+            {
+              "id": "plan-motion-1794056393299-a18ab7",
+              "type": "rotate"
+            },
+            {
+              "id": "plan-motion-1794056406649-6h4rgx",
+              "type": "boomerang",
+              "overrideCode": "chassis.moveToPose(@x, @y, @th, 2000, {.forwards = @fwd, .lead = @ld, .maxSpeed = @spd, .minSpeed = @minspd}, false);"
+            }
+          ]
+        },
+        {
+          "x": 19,
+          "y": 48,
+          "theta": 110,
+          "speed": 127
+        }
+      ],
+      "planned-nodes": [
+        {
+          "id": "plan-node-1794058172043-61isqk",
+          "objectId": "plan-object-1791245835994-flx2ya",
+          "methodId": "plan-method-1791247627343-abcia1",
+          "beforeWaypoint": 0,
+          "index": 0
+        },
+        {
+          "id": "plan-node-1794056340898-8dqrmo",
+          "objectId": "plan-object-1794055967569-58sggs",
+          "methodId": "plan-method-1794055987302-8manbx",
+          "beforeWaypoint": 1,
+          "index": 0
+        },
+        {
+          "id": "plan-node-1794056344748-8zdjmo",
+          "objectId": "plan-object-1778817975552-5joe92",
+          "methodId": "plan-method-1778817981719-zzq0ti",
+          "beforeWaypoint": 1,
+          "index": 1
+        },
+        {
+          "id": "plan-node-1794056348582-79dyib",
+          "objectId": "plan-object-1794055967569-58sggs",
+          "methodId": "plan-method-1794055997251-2jzfj2",
+          "beforeWaypoint": 1,
+          "index": 2
+        }
+      ],
+      "planned-code-export": {
+        "header": "#include \"./../include/setup.hpp\"\nvoid MotionViewAuton() {",
+        "footer": "}",
+        "target": "project",
+        "path": "/Users/David/Documents/PROS-Projects/3142s-Override/src/autonomous.cpp"
+      }
+    }
+  ]
+}

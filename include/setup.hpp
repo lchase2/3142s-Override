@@ -24,7 +24,14 @@ extern lemlib::Chassis chassis;
 extern pros::Controller controller;
 
 extern pros::Motor toggle;
+enum class ToggleState {
+  SPINNING,
+  OFF
+};
+
 void handleToggle();
+ToggleState getToggleState();
+void setToggleState(ToggleState state);
 
 extern pros::MotorGroup dr4bMech;
 extern pros::Motor claw;
@@ -32,8 +39,10 @@ extern pros::Distance clawDistance;
 
 void dr4bHandle();
 void initializeLiftHeight();
-void liftScoreMacro();
+// Zero runs one step gated by A. A positive timeout in milliseconds runs without A.
+void liftScoreMacro(uint32_t timeoutMs = 0);
 
+constexpr uint32_t kClawOpenTimeMs = 150;
 void openClaw();
 void closeClaw();
 void relaxClaw();
@@ -44,6 +53,11 @@ enum class ClawState {
   CLOSED,
   RELAXED
 };
+
+void setClawState(ClawState state);
+ClawState getClawState();
+void setClawAction(ClawState action);
+
 
 enum class LiftHeightSteps {
   MatchLoad, /* Height to pick up from match load */
@@ -84,9 +98,5 @@ constexpr std::pair<float, LiftHeightSteps> dr4bHeightSteps[] = {
 
 // Lift is only ever lowered using PID, so only one is needed
 extern lemlib::PID liftPID;
-
-void setClawState(ClawState state);
-ClawState getClawState();
-void setClawAction(ClawState action);
 
 extern void MotionViewAuton();

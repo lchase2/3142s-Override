@@ -1,21 +1,29 @@
-#include "setup.hpp"
+#include "./../include/setup.hpp"
 void MotionViewAuton() {
-auto& logger = mvlib::Logger::getInstance();
-
-chassis.setPose(62, 0, 270);
-chassis.moveToPoint(19.5, 0, 4000, {.forwards = true, .maxSpeed = 127});
-chassis.turnToHeading(20, 1000);
-chassis.moveToPoint(42, 55, 2000, {.forwards = true, .maxSpeed = 127});
-chassis.turnToHeading(170, 1000);
-chassis.moveToPoint(46.5, 28.5, 2000, {.forwards = true, .maxSpeed = 51});
-chassis.turnToHeading(180, 1000, {}, false);
+chassis.setPose(0, 64, 180);
+chassis.moveToPoint(10, 47, 4000, {.forwards = true, .maxSpeed = 127, .minSpeed = 0});
+chassis.turnToHeading(90, 2000, {.maxSpeed = 127, .minSpeed = 0});
+dr4bMech.move(100);
+pros::delay(400);
+dr4bMech.move(0);
+chassis.moveToPoint(19, 46.5, 4000, {.forwards = true, .maxSpeed = 80, .minSpeed = 0}, false);
 chassis.waitUntilDone();
+liftScoreMacro(3000);
+setClawAction(ClawState::OPEN);
 pros::delay(1000);
-chassis.moveToPoint(50.5, 58.5, 4000, {.forwards = false, .maxSpeed = 127});
-chassis.turnToHeading(90, 800);
-chassis.moveToPoint(63.25, 58.5, 1000, {.forwards = true, .maxSpeed = 127}, false);
+chassis.moveToPoint(9.5, 47, 4000, {.forwards = false, .maxSpeed = 127, .minSpeed = 0}, false);
+chassis.turnToHeading(150, 2000, {.maxSpeed = 127, .minSpeed = 0}, false);
 chassis.waitUntilDone();
-logger.info("Auton complete!");
-pros::delay(1000);
-logger.pause();
+dr4bMech.move(-50);
+chassis.moveToPoint(16.5, 35.5, 4000, {.forwards = true, .maxSpeed = 127, .minSpeed = 10}, false);
+chassis.moveToPoint(21.5, 26.5, 4000, {.forwards = true, .maxSpeed = 50, .minSpeed = 0}, false);
+chassis.waitUntilDone();
+setClawAction(ClawState::CLOSED);
+chassis.moveToPoint(23, 33.5, 4000, {.forwards = true, .maxSpeed = 127, .minSpeed = 0}, false);
+dr4bMech.move(100);
+pros::delay(400);
+dr4bMech.move(0);
+chassis.moveToPoint(23.5, 42.5, 4000, {.forwards = true, .maxSpeed = 70, .minSpeed = 0}, false);
+liftScoreMacro(1500);
+setClawAction(ClawState::OPEN);
 }

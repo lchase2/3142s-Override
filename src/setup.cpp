@@ -20,12 +20,12 @@ pros::MotorGroup dr4bMech({-12, 1}, pros::MotorGears::invalid,
                         pros::MotorUnits::degrees);
 
 pros::Motor claw(
-  -15,
+  -20,
   pros::v5::MotorGears::red,
   pros::v5::MotorUnits::degrees
 );
 
-pros::Distance clawDistance(15); // CHANGE TO CORRECT PORT ONCE WIRED
+pros::Distance clawDistance(15); 
 
 pros::Motor toggle(
   4,
@@ -33,7 +33,7 @@ pros::Motor toggle(
   pros::v5::MotorUnits::degrees
 );
 
-pros::Rotation horizontalOdom(-4);
+pros::Rotation horizontalOdom(-5);
 pros::Rotation verticalOdom(7);
 pros::IMU imu1(16);
 pros::IMU imu2(11);

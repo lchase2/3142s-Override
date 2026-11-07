@@ -20,7 +20,7 @@ void openClaw() {
   auto& logger = mvlib::Logger::getInstance();
 
   claw.move_velocity(-kClawOpenVelocity);
-  pros::delay(150);
+  pros::delay(kClawOpenTimeMs);
   claw.move_voltage(-kClawKeepOpenPower);
   
   setClawState(ClawState::OPEN);
@@ -62,10 +62,16 @@ void controllerClawHandle() {
       return;
     }
     setClawAction(ClawState::OPEN);
-        
+    
     pros::Task closeClawTask{[=] {
+      pros::delay(100);
+      if (!controller.get_digital(DIGITAL_L2)) {
+        // Button released right after click, keep open
+        return;
+      }
       while (controller.get_digital(DIGITAL_L2)) pros::delay(10);
-      setClawAction(ClawState::CLOSED);
+      claw.move_voltage(9000);
+      setClawState(ClawState::CLOSED);
     }};
 
   } else if (controller.get_digital_new_press(DIGITAL_L1)) {

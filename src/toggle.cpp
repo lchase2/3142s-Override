@@ -3,12 +3,21 @@
 #include <cstdlib>
 
 namespace {
-bool currentlySpinning = false;
+ToggleState currentToggleState = ToggleState::OFF;
 } // namespace
 
 void handleToggle() {
   if (controller.get_digital_new_press(DIGITAL_X)) {
-    currentlySpinning = !currentlySpinning;
-    toggle.move(currentlySpinning ? 127 : 0);
+    currentToggleState = currentToggleState == ToggleState::SPINNING ? ToggleState::OFF : ToggleState::SPINNING;
+    setToggleState(currentToggleState);
   }
+}
+
+ToggleState getToggleState() {
+  return currentToggleState;
+}
+
+void setToggleState(ToggleState state) {
+  currentToggleState = state;
+  toggle.move(currentToggleState == ToggleState::SPINNING ? 90 : 0);
 }

@@ -31,7 +31,6 @@ void initialize() {
   leftDrivetrain.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
   rightDrivetrain.set_brake_mode_all(pros::E_MOTOR_BRAKE_COAST);
   claw.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-  // dr4bMech.tare_position_all(); // Dr4b MUST be lowered completely before starting
   initializeLiftHeight();
   auto& logger = mvlib::Logger::getInstance();
 
@@ -68,8 +67,9 @@ void initialize() {
       .predicate = PREDICATE(v > 45),
       .label = "Claw Motor Overheating"
     }).setActive(false);
-  logger.watch("Claw Motor Watts", LogLevel::INFO, WatchMode::onInterval, 150_mvMs, 
-    [&]() { return claw.get_power(); }).setActive(false);
+
+  logger.watch("DR4b Motor Amps", LogLevel::INFO, WatchMode::onInterval, 150_mvMs, 
+    [&]() { return dr4bMech.get_current_draw(); });
 
   logger.watch("Claw Motor Position", LogLevel::INFO, WatchMode::onChange, 150_mvMs, 
     [&]() { return claw.get_position(); }).setActive(false);
@@ -94,23 +94,7 @@ void initialize() {
     .elevatedLevel = LogLevel::OFF,
     .predicate = PREDICATE(v > 2000)
   });
-
-  // logger.watch("Angular PID", LogLevel::INFO, WatchMode::onInterval, 1000_mvMs, 
-  // [&]() { return chassis.angularPID.getOutput(); });
-  // logger.setPrintWatches(false);
-
-  chassis.setPose(0, 0, 0);
 }
-
-// | # | Movement | Physical starting pose `(x, y, θ)` | Destination | Lead | Direction |
-// |---|---|---|---|---|---|
-// | 1 | Straight control | `(0, 0, 0°)` | Point `(0, 36)` | — | Forwards |
-// | 2 | In-place turn control | `(0, 0, 0°)` | Heading `90°` | — | — |
-// | 3 | Baseline boomerang | `(0, 0, 0°)` | Pose `(24, 24, 90°)` | `0.6` | Forwards |
-// | 4 | Smaller lead | `(0, 0, 0°)` | Pose `(24, 24, 90°)` | `0.3` | Forwards |
-// | 5 | Larger lead | `(0, 0, 0°)` | Pose `(24, 24, 90°)` | `0.8` | Forwards |
-// | 6 | Different starting heading | `(0, 0, 90°)` | Pose `(24, 24, 90°)` | `0.6` | Forwards |
-// | 7 | Backwards boomerang | `(0, 0, 180°)` | Pose `(24, 24, 270°)` | `0.6` | Backwards |
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or
@@ -142,24 +126,19 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-chassis.setPose(62, 7.5, 297);
-auto& logger = mvlib::Logger::getInstance();
-
-closeClaw();
-chassis.moveToPoint(54.5, 13.5, 4000, {.forwards = true, .maxSpeed = 50});
-chassis.turnToHeading(318, 1000);
-chassis.turnToHeading(318, 1000);
- dr4bMech.move(120);
-pros::delay(100);
- dr4bMech.move(0);
-chassis.moveToPoint(49, 20, 4000, {.forwards = true, .maxSpeed = 50});
+chassis.setPose(0, 64, 180);
+chassis.moveToPoint(10, 47, 4000, {.forwards = true, .maxSpeed = 127, .minSpeed = 0});
+chassis.turnToHeading(90, 2000, {.maxSpeed = 127, .minSpeed = 0});
+dr4bMech.move(100);
+pros::delay(400);
+dr4bMech.move(0);
+chassis.moveToPoint(19, 46.5, 4000, {.forwards = true, .maxSpeed = 80, .minSpeed = 0}, false);
 chassis.waitUntilDone();
-chassis.waitUntilDone();
- dr4bMech.move(-80);
-pros::delay(100);
- dr4bMech.move(0);
-openClaw();
+liftScoreMacro(3000);
+setClawAction(ClawState::OPEN);
 pros::delay(1000);
+chassis.moveToPoint(9.5, 47, 4000, {.forwards = false, .maxSpeed = 127, .minSpeed = 0}, false);
+chassis.turnToHeading(40, 2000, {.maxSpeed = 127, .minSpeed = 0}, false);
 }
 
 /**
@@ -178,15 +157,15 @@ pros::delay(1000);
 
 control::Slew slew{
   20,
-  20,
-  5,
-  7.5
+  0,
+  15,
+  15
 };
 
 control::ExpoTurnConfig expoTurnConfig{
-  1.75,
-  90,
-  90,
+  2,
+  127,
+  127,
   127
 };
 
@@ -201,9 +180,9 @@ control::DriveConfig config{
   .expoTurnConfig = expoTurnConfig,
   .driveMode = control::DriveMode::CURVATURE,
   .drivetrain = controlDrive,
-  .expoThrottle = 1.8,
+  .expoThrottle = 1.4,
   .deadband = 10,
-  .desaturateBias = 0.625
+  .desaturateBias = 0.6
 };
 
 screen::Manager ui;
@@ -266,17 +245,10 @@ void captureBoomerang(const char* runId,
     bmV.setActive(false);
 }
 
-
 void opcontrol() {
-  auto& logger = mvlib::Logger::getInstance();
+  uint32_t startTime = pros::millis();
 
-  // pros::delay(1000);
-  // MotionViewAuton();
-  // chassis.turnToHeading(180, 15000, {.direction = AngularDirection::CW_CLOCKWISE}, false);
-  // ui.printToScreen("Touch screen to continue...");
-  // ui.waitForScreenTouch(5000);
-  // ui.clearScreen();
-  // chassis.turnToHeading(0, 15000, {.direction = AngularDirection::CCW_COUNTERCLOCKWISE}, false);
+  auto& logger = mvlib::Logger::getInstance();
 
   while (true) {
     dr4bHandle();
@@ -287,7 +259,6 @@ void opcontrol() {
     // print pose to screen
     lemlib::Pose pose = chassis.getPose();
     pros::screen::print(pros::E_TEXT_SMALL, 10, 10, "X: %.2f | Y: %.2f | Theta: %.2f" , pose.x, pose.y, pose.theta);
-    pros::screen::print(pros::E_TEXT_SMALL, 10, 10, "X: %.;ouhqwiduh2f | Y: %.kquwhd2f | Theta: asd.2f");
     pros::delay(10);
 
   }
